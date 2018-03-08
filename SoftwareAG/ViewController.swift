@@ -12,10 +12,18 @@ import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
 
+    
+    var nodeModel:SCNNode!
+    let nodeName = "elephant" // Same name we set for the node on SceneKit's editor
+    
     @IBOutlet var sceneView: ARSCNView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let scene = SCNScene()
+        
+        sceneView.antialiasingMode = .multisampling4X
         
         // Set the view's delegate
         sceneView.delegate = self
@@ -24,7 +32,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let modelScene = SCNScene(named: "art.scnassets/elephant.dae")!
+        
+        
+        nodeModel =  modelScene.rootNode.childNode(withName: nodeName, recursively: true)
         
         // Set the scene to the view
         sceneView.scene = scene
@@ -51,7 +62,60 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.didReceiveMemoryWarning()
         // Release any cached data, images, etc that aren't in use.
     }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        let location = touches.first!.location(in: sceneView)
+        
+        
+        var hitTestOptions = [SCNHitTestOption: Any]()
+        hitTestOptions[SCNHitTestOption.boundingBoxOnly] = true
+        let hitResults: [SCNHitTestResult]  =
+            sceneView.hitTest(location, options: hitTestOptions)
+        
+        if let hit = hitResults.first {
+            if let node = getParent(hit.node) {
+                node.removeFromParentNode()
+                return
+            }
+        }
+        
+        let hitResultsFeaturePoints: [ARHitTestResult] = sceneView.hitTest(location, types: .featurePoint)
+        if let hit = hitResultsFeaturePoints.first {
+            sceneView.session.add(anchor: ARAnchor(transform: hit.worldTransform))
+        }
+        
+    }
+    
+    func getParent(_ nodeFound: SCNNode?) -> SCNNode? {
+        
+        
+        
+        if let node = nodeFound {
+            if node.name == nodeName {
+                return node
+            } else if let parent = node.parent {
+                return getParent(parent)
+            }
+        }
+        return nil
+    
+    }
 
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        if !anchor.isKind(of: ARPlaneAnchor.self) {
+            DispatchQueue.main.async {
+                let modelClone = self.nodeModel.clone()
+                modelClone.position = SCNVector3Zero
+                
+                // Add model as a child of the node
+                node.addChildNode(modelClone)
+            }
+        }
+    }
+    
+    
+    
     // MARK: - ARSCNViewDelegate
     
 /*
