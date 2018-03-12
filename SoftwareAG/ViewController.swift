@@ -18,9 +18,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @IBOutlet var sceneView: ARSCNView!
     
+    let configuration = ARWorldTrackingConfiguration()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+         self.sceneView.debugOptions = [ARSCNDebugOptions.showFeaturePoints, ARSCNDebugOptions.showWorldOrigin]
+        self.sceneView.session.run(configuration)
         let scene = SCNScene()
         
         sceneView.antialiasingMode = .multisampling4X
@@ -34,11 +37,24 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Create a new scene
         let modelScene = SCNScene(named: "art.scnassets/elephant.dae")!
         
+        let spaceModel = SCNScene(named: "art.scnassets/ship.scn")!
+        
+        sceneView.scene = spaceModel
         
         nodeModel =  modelScene.rootNode.childNode(withName: nodeName, recursively: true)
         
         // Set the scene to the view
         sceneView.scene = scene
+        
+        let node = SCNNode()
+        let boxNode = SCNNode(geometry: SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0))
+        self.sceneView.scene.rootNode.addChildNode(node)
+        
+        boxNode.geometry?.firstMaterial?.diffuse.contents = UIColor.blue
+        boxNode.position = SCNVector3(0, 0, 0)
+        node.addChildNode(boxNode)
+        
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
